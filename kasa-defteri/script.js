@@ -161,20 +161,22 @@ function groupByCurrencyAndPayment(list) {
   return totals;
 }
 
-function renderAmountsWithPaymentBreakdown(container, totals) {
+function renderAmountsWithPaymentBreakdown(container, totals, options = {}) {
+  const { allowNegative = false } = options;
   const keys = Object.keys(totals);
   if (keys.length === 0) {
     container.innerHTML = '<span class="empty">— kayıt yok —</span>';
     return;
   }
+  const hasValue = v => (allowNegative ? v !== 0 : v > 0);
   container.innerHTML = keys
     .sort()
     .map(cur => {
       const bucket = totals[cur];
       const parts = [];
-      if (bucket.cash > 0) parts.push(`<span class="payment-tag cash">Nakit: ${CURRENCY_SYMBOLS[cur]} ${formatAmount(bucket.cash)}</span>`);
-      if (bucket.card > 0) parts.push(`<span class="payment-tag card">Kredi kartı: ${CURRENCY_SYMBOLS[cur]} ${formatAmount(bucket.card)}</span>`);
-      if (bucket.unspecified > 0) parts.push(`<span class="payment-tag unspecified">Belirtilmemiş: ${CURRENCY_SYMBOLS[cur]} ${formatAmount(bucket.unspecified)}</span>`);
+      if (hasValue(bucket.cash)) parts.push(`<span class="payment-tag cash">Nakit: ${CURRENCY_SYMBOLS[cur]} ${formatAmount(bucket.cash)}</span>`);
+      if (hasValue(bucket.card)) parts.push(`<span class="payment-tag card">Kredi kartı: ${CURRENCY_SYMBOLS[cur]} ${formatAmount(bucket.card)}</span>`);
+      if (hasValue(bucket.unspecified)) parts.push(`<span class="payment-tag unspecified">Belirtilmemiş: ${CURRENCY_SYMBOLS[cur]} ${formatAmount(bucket.unspecified)}</span>`);
       const breakdown = parts.length ? `<div class="amount-breakdown">${parts.join('')}</div>` : '';
       return `<div class="amount-row">${CURRENCY_SYMBOLS[cur]} ${formatAmount(bucket.total)}${breakdown}</div>`;
     })
@@ -189,17 +191,27 @@ function renderSummary(list) {
   const expenseByPayment = groupByCurrencyAndPayment(expense);
   const treatTotals = groupByCurrency(treat);
 
-  const balanceTotals = {};
+  const balanceByPayment = {};
   Object.keys(incomeByPayment).forEach(cur => {
-    balanceTotals[cur] = (balanceTotals[cur] || 0) + incomeByPayment[cur].total;
+    if (!balanceByPayment[cur]) balanceByPayment[cur] = { total: 0, cash: 0, card: 0, unspecified: 0 };
+    const bucket = incomeByPayment[cur];
+    balanceByPayment[cur].total += bucket.total;
+    balanceByPayment[cur].cash += bucket.cash;
+    balanceByPayment[cur].card += bucket.card;
+    balanceByPayment[cur].unspecified += bucket.unspecified;
   });
   Object.keys(expenseByPayment).forEach(cur => {
-    balanceTotals[cur] = (balanceTotals[cur] || 0) - expenseByPayment[cur].total;
+    if (!balanceByPayment[cur]) balanceByPayment[cur] = { total: 0, cash: 0, card: 0, unspecified: 0 };
+    const bucket = expenseByPayment[cur];
+    balanceByPayment[cur].total -= bucket.total;
+    balanceByPayment[cur].cash -= bucket.cash;
+    balanceByPayment[cur].card -= bucket.card;
+    balanceByPayment[cur].unspecified -= bucket.unspecified;
   });
 
   renderAmountsWithPaymentBreakdown(document.getElementById('summary-income'), incomeByPayment);
   renderAmountsWithPaymentBreakdown(document.getElementById('summary-expense'), expenseByPayment);
-  renderAmountsByCurrency(document.getElementById('summary-balance'), balanceTotals);
+  renderAmountsWithPaymentBreakdown(document.getElementById('summary-balance'), balanceByPayment, { allowNegative: true });
   renderAmountsByCurrency(document.getElementById('summary-treat'), treatTotals);
 }
 
