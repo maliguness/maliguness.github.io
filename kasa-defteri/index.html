@@ -83,6 +83,21 @@
       </div>
     </section>
 
+    <!-- Grafik -->
+    <section class="chart-card" id="chart-card" hidden>
+      <div class="table-header">
+        <h2>Günlük Dağılım</h2>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot income"></span>Gelir</span>
+          <span class="legend-item"><span class="legend-dot expense"></span>Gider</span>
+          <span class="legend-item"><span class="legend-dot treat"></span>İkram</span>
+        </div>
+      </div>
+      <div id="chart-groups"></div>
+    </section>
+
+    <div id="chart-tooltip" hidden></div>
+
     <!-- Tablo -->
     <section class="table-card">
       <div class="table-header">
@@ -116,8 +131,9 @@
         <h2 id="modal-title">Yeni Kayıt</h2>
         <button class="modal-close" id="modal-close">&times;</button>
       </div>
-      <form id="record-form">
+      <form id="record-form" novalidate>
         <input type="hidden" id="record-id">
+        <p class="form-error" id="form-error" hidden></p>
 
         <div class="type-toggle">
           <button type="button" class="type-btn income active" data-type="income">Gelir</button>
@@ -161,6 +177,7 @@
           <select id="field-payment">
             <option value="cash">Nakit</option>
             <option value="card">Kredi Kartı</option>
+            <option value="unspecified">Belirtilmemiş</option>
           </select>
         </label>
 
